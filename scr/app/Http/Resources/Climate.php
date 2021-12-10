@@ -7,6 +7,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class Climate extends JsonResource
 {
     /**
+     * The "data" wrapper that should be applied.
+     *
+     * @var string
+     */
+    public static $wrap = null;
+
+    /**
      * Transform the resource into an array.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -16,7 +23,6 @@ class Climate extends JsonResource
     {
         return [
             'city_name'     => $this->city_name,
-            'state_code'    => $this->state_code,
             'country_code'  => $this->country_code,
             'temp'          => $this->temp,
             'temp_min'      => $this->temp_min,
