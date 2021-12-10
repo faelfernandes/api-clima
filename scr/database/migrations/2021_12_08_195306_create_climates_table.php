@@ -16,7 +16,6 @@ class CreateClimatesTable extends Migration
         Schema::create('climates', function (Blueprint $table) {
             $table->id();
             $table->string('city_name');
-            $table->string('state_code');
             $table->string('country_code');
             $table->double('temp');
             $table->double('temp_min');
