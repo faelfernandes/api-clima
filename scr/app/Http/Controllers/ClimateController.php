@@ -16,11 +16,6 @@ class ClimateController extends Controller
         $this->openweathermap = new OpenWeatherMap();
     }
 
-    public function teste($state, $city)
-    {
-        return $this->openweathermap->getCityTemperatureInformation($state, $city);
-    }
-
     /**
      * Display a listing of the resource.
      *
@@ -33,16 +28,6 @@ class ClimateController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -50,19 +35,14 @@ class ClimateController extends Controller
      */
     public function store(Request $request)
     {
-        $climate = new Climate;
-        $climate->city_name     = $request->input('city_name');
-        $climate->state_code    = $request->input('state_code');
-        $climate->country_code  = $request->input('country_code');
-        $climate->temp          = $request->input('temp');
-        $climate->temp_min      = $request->input('temp_min');
-        $climate->temp_max      = $request->input('temp_max');
-
-        if ($climate->save()) {
-            return new ClimateResource($climate);
+        try {
+            $climate = Climate::create($request->all());
+        } catch (\Exception $e) {
+            return $e->getMessage();
         }
-    }
 
+        return new ClimateResource($climate);
+    }
 
     /**
      * Display the specified resource.
@@ -70,22 +50,28 @@ class ClimateController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show($city)
     {
-        $climate = Climate::findOrFail($id);
+        $climate = Climate::where('city_name', $city)->first();
+        $mytime = \Carbon\Carbon::now()->subMinutes(17);
+
+        if (empty($climate)) {
+            $result = $this->openweathermap->getCityTemperatureInformation($city);
+            try {
+                Climate::create($result);
+            } catch (\Illuminate\Database\QueryException $e) {
+                return $result;
+            }
+            return $result;
+        }
+
+        if ($climate->updated_at <= $mytime) {
+            $result = $this->openweathermap->getCityTemperatureInformation($city);
+            unset($result["cod"]);
+            Climate::where('city_name', $city)->update($result);
+        }
+
         return new ClimateResource($climate);
-    }
-
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
     }
 
     /**
@@ -99,7 +85,6 @@ class ClimateController extends Controller
     {
         $climate = Climate::findOrFail($request->id);
         $climate->city_name     = $request->input('city_name');
-        $climate->state_code    = $request->input('state_code');
         $climate->country_code  = $request->input('country_code');
         $climate->temp          = $request->input('temp');
         $climate->temp_min      = $request->input('temp_min');
@@ -109,7 +94,6 @@ class ClimateController extends Controller
             return new ClimateResource($climate);
         }
     }
-
 
     /**
      * Remove the specified resource from storage.
